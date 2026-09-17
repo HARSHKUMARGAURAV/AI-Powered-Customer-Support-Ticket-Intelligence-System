@@ -1,5 +1,3 @@
-# AI-Powered-Customer-Support-Ticket-Intelligence-System
-AI-powered customer support ticket intelligence system that lets you query ticket data in plain English and surfaces proactive alerts on tickets needing attention — built with FastAPI, Streamlit, SQLite, and Groq's free-tier LLM for safe, schema-validated natural-language query planning (never raw LLM-generated SQL).
 # 🎫 Support Ticket AI
 
 **AI-powered customer-support ticket intelligence system** — ask questions about your ticket data in plain English and get proactive alerts on tickets that need attention.
@@ -301,9 +299,16 @@ Supported question types:
 | Count | "How many tickets are currently open?" |
 | Filter / list | "Show me all Critical tickets not resolved within 12 hours" |
 | Average rating | "What is the average customer rating for Technical tickets?" |
-| Agent ranking | "Which agent resolved the most tickets?" |
+| Agent ranking | "Which agent resolved the most tickets this month?" |
 | Resolution analysis | "What is the average resolution time for Critical tickets?" |
-| Anomaly summary | "Are there any anomalies in resolution times?" |
+| Anomaly summary | "Are there any anomalies in resolution times this week?" |
+
+Relative-date phrases ("this month", "this week", "today", "last 7/30 days") are
+resolved to real date ranges by the application (`app/utils/datetime_utils.py`),
+not guessed by the LLM. Since this dataset is a static snapshot (Jan–Mar 2024),
+set `AS_OF_DATE` in `.env` (e.g. `AS_OF_DATE=2024-03-15`) to demo these against
+data that actually falls in range — otherwise they correctly return "0 results"
+relative to today's real date, which is expected behavior for a live system.
 
 ### `GET /anomalies`
 Returns all currently flagged tickets.
@@ -379,8 +384,8 @@ Both return the ticket ID, a human-readable reason, and the supporting values �
 
 ## Limitations & Future Work
 
-- **Relative dates** ("this month", "this week") aren't resolved yet — the LLM is instructed not to guess them, so they're currently ignored rather than computed from "today."
-- **Anomaly ages are wall-clock**, so replaying this exact static CSV against the current date will flag most open tickets as very old — correct behavior for a live system, less intuitive for a demo of this specific historical file.
+- **Relative dates now resolve to real date ranges.** "This month", "this week", "today", "last 7/30 days" are resolved by the application (`app/utils/datetime_utils.py`), not guessed by the LLM. Since this dataset is static (Jan–Mar 2024), set `AS_OF_DATE` in `.env` to demo these meaningfully against the sample data — without it, they correctly report 0 results relative to today's real date.
+- **Anomaly ages are wall-clock by default**, so replaying this exact static CSV against the real current date will flag most open tickets as very old. Setting `AS_OF_DATE` (same variable as above) also fixes this for demos, since both features share the same time-reference helper.
 - **No second LLM pass for phrasing** — answers are templated for reliability; a richer version could add a constrained LLM pass purely for tone while still injecting verified numbers.
 - **No auth / rate limiting** on the API — fine for local evaluation, not production-ready as-is.
 - **Single-table schema** — agent metadata beyond `agent_id` isn't modeled; a production version would likely join against an agents table.
